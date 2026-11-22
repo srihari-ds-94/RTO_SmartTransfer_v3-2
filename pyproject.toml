@@ -47,3 +47,6 @@ rto_copilot = ["web/*"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
+
+[tool.vercel]
+entrypoint = "src.rto_copilot.api:app"
