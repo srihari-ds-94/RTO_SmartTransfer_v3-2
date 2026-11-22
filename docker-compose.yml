@@ -1,0 +1,27 @@
+# From this folder:  copy .env.example .env   (fill in the key)   then   docker compose up --build
+# Open http://localhost:8000
+services:
+  copilot:
+    build: .
+    image: rto-smarttransfer-copilot:v3
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file: .env
+    volumes:
+      - copilot_state:/data/state
+      - copilot_llm_cache:/data/llm_cache
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/copilot
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    mem_limit: 4g
+    restart: unless-stopped
+    # If the model endpoint uses a private CA, mount it and set LLM_CA_CERT in .env, for example:
+    # volumes: ["./certs/llm_ca.crt:/run/secrets/llm_ca.crt:ro"]   and   LLM_CA_CERT=/run/secrets/llm_ca.crt
+
+volumes:
+  copilot_state:
+  copilot_llm_cache:

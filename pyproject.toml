@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rto-copilot"
+version = "3.0.0"
+description = "RTO SmartTransfer Copilot: spec scoring, RAG, agent, serving layer and API (Track B capstone, Synapse6)"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "opentelemetry-sdk>=1.25",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "sentence-transformers>=3.0",
+    "rank-bm25>=0.2.2",
+]
+
+[project.optional-dependencies]
+rag = ["sentence-transformers>=3.0", "rank-bm25>=0.2.2"]
+otlp = ["opentelemetry-exporter-otlp-proto-http>=1.25"]
+notebooks = ["jupyterlab", "matplotlib", "pandas", "nbformat", "nbconvert", "scipy", "rank-bm25", "ipykernel"]
+corpus = ["requests", "beautifulsoup4", "pymupdf"]
+dev = ["pytest", "httpx"]
+
+[project.scripts]
+rto-baseline = "rto_copilot.baseline:main"
+rto-retrieval = "rto_copilot.retrieval:main"
+rto-rag = "rto_copilot.rag:main"
+rto-agent-eval = "rto_copilot.agent_eval:main"
+rto-chat = "rto_copilot.chat:main"
+rto-evalset = "rto_copilot.evalset:main"
+rto-report = "rto_copilot.reporting:main"
+rto-rai = "rto_copilot.responsible_ai:main"
+rto-diagnose = "rto_copilot.diagnose:main"
+rto-trace-report = "rto_copilot.trace_report:main"
+rto-serve = "rto_copilot.api:main"
+rto-check = "rto_copilot.check:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+rto_copilot = ["web/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"

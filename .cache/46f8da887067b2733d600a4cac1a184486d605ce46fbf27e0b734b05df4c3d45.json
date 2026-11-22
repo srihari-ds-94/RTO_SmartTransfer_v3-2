@@ -1,0 +1,1 @@
+{"text": "{\"behavior\": \"ASK_CLARIFICATION\", \"reason\": \"Case ID and role are missing.\", \"role\": \"unknown\", \"case_id\": null, \"transfer_date\": null, \"steps\": []}", "latency_s": 1.21, "prompt_tokens": 2378, "completion_tokens": 44}

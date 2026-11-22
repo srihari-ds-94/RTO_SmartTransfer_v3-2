@@ -1,0 +1,21 @@
+{
+  "split": "test",
+  "items": 34,
+  "model": "Qwen/Qwen3-8B",
+  "llm_critic": false,
+  "fault_rate": 0.0,
+  "fresh_cache": true,
+  "limits": {
+    "max_tool_calls": 8,
+    "max_llm_calls": 7,
+    "max_critic_rounds": 2,
+    "task_token_budget": 45000,
+    "context_window": 8192,
+    "max_output_tokens": 900,
+    "chars_per_token": 3.8,
+    "safety_margin": 400,
+    "timeout_s": 300.0
+  },
+  "retriever": "w128 hybrid_rerank_rrf, case-aware, 8 chunks, <=2 per source",
+  "usd_per_1m_tokens": 0.0
+}

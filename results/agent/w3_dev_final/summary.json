@@ -1,0 +1,42 @@
+{
+  "items": 57,
+  "end_to_end_accuracy": 0.561,
+  "behavior_accuracy": 0.737,
+  "must_include_coverage": 0.785,
+  "finding_code_exact_match": 1.0,
+  "citation_ok_rate": 0.965,
+  "task_completion_rate": 1.0,
+  "avg_tool_calls": 2.088,
+  "avg_llm_calls": 2.456,
+  "avg_revisions": 0.439,
+  "tool_error_rate": 0.0,
+  "avg_tokens": 10099.035,
+  "avg_prompt_tokens": 9651.158,
+  "avg_completion_tokens": 447.877,
+  "avg_llm_latency_s": 11.392,
+  "avg_wall_latency_s": 20.846,
+  "p50_wall_latency_s": 18.29,
+  "p95_wall_latency_s": 41.96,
+  "avg_cost_usd": 0.0,
+  "stop_reasons": {
+    "done": 56,
+    "critic_unresolved": 1
+  },
+  "failure_taxonomy": {
+    "PASS": 32,
+    "REASONING_ERROR": 22,
+    "RETRIEVAL_MISS": 3
+  },
+  "failure_flags": {
+    "REASONING_ERROR": 25,
+    "RETRIEVAL_MISS": 3
+  },
+  "failure_tags": {
+    "WRONG_BEHAVIOR": 13,
+    "MISSING_FACT": 23,
+    "CITATION_ERROR": 2,
+    "OVER_REFUSAL": 1,
+    "FORBIDDEN_PHRASE": 1,
+    "MISSED_REFUSAL_OR_ESCALATION": 1
+  }
+}

@@ -1,0 +1,21 @@
+run,stage,avg_ms_per_query,p95_ms,share_of_turn
+TEST split (final config),planner,2799.4,3812.4,0.143
+TEST split (final config),executor.tools,5202.1,11390.4,0.265
+TEST split (final config),executor.compose,10731.6,24034.8,0.547
+TEST split (final config),critic,0.8,2.0,0.0
+TEST split (final config),other,869.0,9415.8,0.044
+Dev: final (rule critic),planner,2940.3,4004.4,0.141
+Dev: final (rule critic),executor.tools,6151.7,10764.8,0.295
+Dev: final (rule critic),executor.compose,10920.2,21878.1,0.524
+Dev: final (rule critic),critic,0.5,2.0,0.0
+Dev: final (rule critic),other,833.1,8942.4,0.04
+Dev ablation: LLM critic,planner,2866.8,3788.3,0.122
+Dev ablation: LLM critic,executor.tools,6060.8,10577.2,0.257
+Dev ablation: LLM critic,executor.compose,11955.7,24659.3,0.508
+Dev ablation: LLM critic,critic,1682.0,5147.5,0.071
+Dev ablation: LLM critic,other,991.3,8938.6,0.042
+Dev robustness: 30% tool faults,planner,23.1,29.5,0.003
+Dev robustness: 30% tool faults,executor.tools,4982.8,10581.7,0.554
+Dev robustness: 30% tool faults,executor.compose,2971.7,12764.7,0.331
+Dev robustness: 30% tool faults,critic,0.5,1.5,0.0
+Dev robustness: 30% tool faults,other,1010.5,9106.3,0.112

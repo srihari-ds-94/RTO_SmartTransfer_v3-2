@@ -1,0 +1,1 @@
+{"text": "{\"behavior\": \"ANSWER\", \"reason\": \"In-scope; pre-requisites for selling a car without a loan.\", \"role\": \"seller\", \"case_id\": \"DEMO-004\", \"transfer_date\": null, \"steps\": [{\"tool\": \"search_corpus\", \"args\": {\"query\": \"pre-requisites for selling a vehicle without loan\"}}]}", "latency_s": 1.89, "prompt_tokens": 2375, "completion_tokens": 79}

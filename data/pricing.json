@@ -1,0 +1,8 @@
+{
+  "Qwen/Qwen3-8B": {
+    "usd_per_1m_input": 0.117,
+    "usd_per_1m_output": 0.455,
+    "source": "OpenRouter list price for qwen/qwen3-8b, observed 6 Oct 2026 (https://openrouter.ai/qwen/qwen3-8b)",
+    "note": "Reference price only. The course endpoint is free; this converts measured tokens into what the same traffic would cost on a paid host."
+  }
+}

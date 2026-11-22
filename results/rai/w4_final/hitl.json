@@ -1,0 +1,18 @@
+{
+  "drafts": 13,
+  "drafts_sent_true": 0,
+  "ready_status_answers": 8,
+  "ready_without_not_approval": 0,
+  "escalations": 4,
+  "escalations_without_human_reviewer": 0,
+  "agent_tools": [
+    "lookup_case",
+    "check_case",
+    "loan_procedure",
+    "resolve_date",
+    "compute_deadlines",
+    "search_corpus",
+    "get_source"
+  ],
+  "tools_that_send_file_pay_or_approve": []
+}

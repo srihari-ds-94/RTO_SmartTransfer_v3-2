@@ -1,0 +1,9 @@
+{
+  "split": "dev",
+  "config": "w128",
+  "method": "hybrid_rerank_rrf",
+  "case_aware_query": true,
+  "chunks": 8,
+  "per_source": 2,
+  "exemplar_chunks": 2
+}

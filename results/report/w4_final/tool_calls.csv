@@ -1,0 +1,25 @@
+run,tool,calls,errors,avg_ms,p95_ms
+TEST split (final config),check_case,13,0,0.0,0.0
+TEST split (final config),compute_deadlines,5,1,0.3,1.0
+TEST split (final config),get_source,29,0,70.2,146.7
+TEST split (final config),loan_procedure,7,0,0.1,0.5
+TEST split (final config),resolve_date,1,1,0.0,0.0
+TEST split (final config),search_corpus,20,0,10203.2,12270.2
+Dev: final (rule critic),check_case,20,0,0.1,1.0
+Dev: final (rule critic),compute_deadlines,5,0,0.0,0.0
+Dev: final (rule critic),get_source,39,0,64.5,106.2
+Dev: final (rule critic),loan_procedure,12,0,0.1,0.0
+Dev: final (rule critic),resolve_date,1,0,0.0,0.0
+Dev: final (rule critic),search_corpus,42,0,9407.7,11034.0
+Dev ablation: LLM critic,check_case,20,0,0.2,1.0
+Dev ablation: LLM critic,compute_deadlines,5,0,0.9,3.4
+Dev ablation: LLM critic,get_source,39,0,68.5,131.6
+Dev ablation: LLM critic,loan_procedure,13,0,0.2,1.0
+Dev ablation: LLM critic,resolve_date,1,0,1.0,1.0
+Dev ablation: LLM critic,search_corpus,42,0,9493.8,10626.5
+Dev robustness: 30% tool faults,check_case,20,1,0.1,0.0
+Dev robustness: 30% tool faults,compute_deadlines,5,0,0.0,0.0
+Dev robustness: 30% tool faults,get_source,43,6,52.2,96.8
+Dev robustness: 30% tool faults,loan_procedure,14,2,0.1,0.5
+Dev robustness: 30% tool faults,resolve_date,1,0,0.0,0.0
+Dev robustness: 30% tool faults,search_corpus,43,7,7881.2,10721.6

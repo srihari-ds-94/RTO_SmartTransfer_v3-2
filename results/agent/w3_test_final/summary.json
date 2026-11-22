@@ -1,0 +1,44 @@
+{
+  "items": 34,
+  "end_to_end_accuracy": 0.324,
+  "behavior_accuracy": 0.735,
+  "must_include_coverage": 0.778,
+  "finding_code_exact_match": 1.0,
+  "citation_ok_rate": 0.882,
+  "task_completion_rate": 1.0,
+  "avg_tool_calls": 2.206,
+  "avg_llm_calls": 2.588,
+  "avg_revisions": 0.588,
+  "tool_error_rate": 0.027,
+  "avg_tokens": 10296.647,
+  "avg_prompt_tokens": 9834.794,
+  "avg_completion_tokens": 461.853,
+  "avg_llm_latency_s": 11.07,
+  "avg_wall_latency_s": 19.604,
+  "p50_wall_latency_s": 17.825,
+  "p95_wall_latency_s": 38.54,
+  "avg_cost_usd": 0.0,
+  "stop_reasons": {
+    "done": 31,
+    "critic_unresolved": 3
+  },
+  "failure_taxonomy": {
+    "REASONING_ERROR": 17,
+    "RETRIEVAL_MISS": 5,
+    "PASS": 11,
+    "TOOL_CALL_ERROR": 1
+  },
+  "failure_flags": {
+    "REASONING_ERROR": 23,
+    "RETRIEVAL_MISS": 5,
+    "TOOL_CALL_ERROR": 1
+  },
+  "failure_tags": {
+    "MISSING_FACT": 16,
+    "WRONG_BEHAVIOR": 6,
+    "CITATION_ERROR": 4,
+    "MISSED_CLARIFICATION": 2,
+    "OVER_REFUSAL": 1,
+    "FORBIDDEN_PHRASE": 2
+  }
+}

@@ -1,0 +1,1 @@
+{"text": "{\"behavior\": \"REFUSE_OUT_OF_SCOPE\", \"reason\": \"Unrelated to vehicle transfer process.\", \"role\": \"unknown\", \"case_id\": \"DEMO-004\", \"transfer_date\": null, \"steps\": []}", "latency_s": 1.27, "prompt_tokens": 2394, "completion_tokens": 51}

@@ -1,0 +1,5 @@
+strategy,avg_calls,avg_latency_s,avg_tokens,behavior_accuracy,citation_ok_rate,end_to_end_accuracy,fail_CITATION_ERROR,fail_FINDING_CODE_ERROR,fail_FORBIDDEN_PHRASE,fail_MISSED_CLARIFICATION,fail_MISSED_REFUSAL_OR_ESCALATION,fail_MISSING_FACT,fail_OVER_REFUSAL,fail_WRONG_BEHAVIOR,finding_code_exact_match,items,json_valid_rate,malformed_first_try,must_include_coverage,must_not_violation_rate
+S0_ZERO_SHOT,1.0,6.279,3014.421,0.579,0.772,0.175,13,4,0,1,4,39,2,17,0.93,57,1.0,0,0.593,0.0
+S1_FEW_SHOT,1.0,4.113,4401.702,0.649,0.825,0.246,10,6,1,0,4,36,3,13,0.895,57,1.0,0,0.606,0.018
+S2_SELF_CONSISTENCY,3.018,20.113,9270.544,0.544,0.772,0.211,13,6,0,1,5,40,2,18,0.895,57,1.0,1,0.587,0.0
+S3_DECOMPOSITION,2.0,13.335,6483.0,0.561,0.754,0.193,14,7,0,1,4,42,1,19,0.877,57,1.0,0,0.568,0.0

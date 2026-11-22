@@ -1,0 +1,9 @@
+# Runtime (the container and `rto-serve`). Notebooks and tests: pip install -e ".[notebooks,dev]"
+fastapi==0.165.0
+uvicorn==0.54.0
+sentence-transformers==6.1.0
+transformers==5.19.0
+rank-bm25==0.2.2
+numpy==2.5.3
+opentelemetry-sdk==1.45.2
+opentelemetry-exporter-otlp-proto-http==1.45.2

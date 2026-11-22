@@ -1,0 +1,3 @@
+strategy,items,end_to_end_accuracy,behavior_accuracy,json_valid_rate,must_include_coverage,must_not_violation_rate,finding_code_exact_match,citation_ok_rate,avg_calls,avg_latency_s,avg_tokens,malformed_first_try,fail_CITATION_ERROR,fail_FINDING_CODE_ERROR,fail_FORBIDDEN_PHRASE,fail_MISSED_REFUSAL_OR_ESCALATION,fail_MISSING_FACT,fail_OVER_REFUSAL,fail_WRONG_BEHAVIOR,retrieval_hit_rate,cited_outside_context_rate
+RAG_RETRIEVED,57,0.175,0.614,1.0,0.628,0.035,0.895,0.719,1.018,5.67,6317.105,1,16,6,2,5,36,1,16,0.81,0.105
+RAG_GOLD,57,0.175,0.596,1.0,0.625,0.035,0.895,0.86,1.018,5.887,6328.263,1,8,6,2,5,36,1,17,1.0,0.018

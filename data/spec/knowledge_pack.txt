@@ -1,0 +1,50 @@
+[SRC-PARIVAHAN-TO] Parivahan - Transfer of Ownership (normal sale)
+- When a vehicle is sold, the purchaser is noted as registered owner in place of the previous owner (transfer of ownership).
+- The transferor reports the fact of transfer in Form 29 to the registering authorities in whose jurisdiction the transferor and transferee reside.
+- Same State: within fourteen days of the transfer, the transferee applies for transfer of ownership in Form 30 to the registering authority.
+- Fee and tax as specified in rule 81 of the Central Motor Vehicles Rules 1989.
+- Documents: Form 29; Form 30; certificate of registration; certificate of insurance; PUC*; PAN card (seller and purchaser) or Form 60*; chassis and engine pencil print*; proof of date of birth of purchaser*; proof of address*; RC book; purchaser's undertaking*; passport photo*; tax clearance certificate*. (* may be required in some states.)
+- Death of owner uses Form 31; public auction uses Form 32.
+- Reference: Motor Vehicles Act 1988 section 50; CMVR 1989 rules 55, 56, 57.
+
+[SRC-WB-FAQ] West Bengal Transport Department FAQ
+- Q9: Apply at the motor vehicle office where the vehicle is registered. Documents: Registration Certificate in original; Form 29 duly filled; Form 30 duly filled; copy of valid insurance (original to be shown); copy of buyer's address proof (original to be shown); valid PUC certificate; copy of PAN card of the purchaser; prescribed fee; tax token; duly filled Form 34 and/or Form 35 in hypothecated cases. Commercial vehicles also need permit surrender slip, offer letter and fitness certificate.
+- Q9 note: transfer should be processed and recorded with the RA immediately, otherwise the previous owner often gets entangled in legal proceedings for later offences by the vehicle.
+- Q10: Hypothecation is endorsed with Form 34 and deleted with Form 35 (in duplicate) with a certificate from the financier for having received full dues, plus copies of valid insurance, PUC and tax token.
+- Commercial vehicle transfer (transfer of permit) is handled before the RTA.
+
+[SRC-PARIVAHAN-HPT] Parivahan - Hypothecation Termination
+- Form 35 signed by the registered owner and the financier; if all dues are cleared, provide the financier's certificate of due clearance; fee per rule 81.
+- If termination is due to repayment failure, the RC is issued in the financier's name using Form 36.
+- Documents: Form 35; certificate of registration; valid insurance; address proof*; PUC*; PAN or Form 60/61*; NOC from financier*; chassis and engine pencil print*.
+
+[SRC-PARIVAHAN-HPA] Parivahan - Hypothecation Addition
+- Form 34, signed by the registered owner and the financier, makes an entry of a hire-purchase, lease or hypothecation agreement in the RC.
+
+[SRC-PARIVAHAN-NOC] Parivahan - No Objection Certificate
+- An owner who removes or sells the vehicle outside the jurisdiction of the registering authority, within or outside the State, applies for an NOC in Form 28 (MVA section 48).
+
+[SRC-PARIVAHAN-HPC] Parivahan - Hypothecation Continuation service
+- VAHAN offers an online Hypothecation Continuation service. Whether West Bengal enables it is not confirmed by an official state source.
+
+[SRC-MVA-S50] Motor Vehicles Act 1988, section 50
+- 50(1)(a)(i): the transferor, for a vehicle registered within the same State, reports the transfer within fourteen days of the transfer and simultaneously sends a copy of the report to the transferee.
+- 50(1)(b): the transferee reports the transfer within thirty days of the transfer and forwards the RC with the prescribed fee and the copy of the transferor's report.
+- 50(3) and 50(5): on late reporting the registering authority may require payment of an amount prescribed by the State (which may vary with the delay) in lieu of action under section 177; if unpaid, action under section 177 follows.
+
+[SRC-MVA-S51] Motor Vehicles Act 1988, section 51
+- 51(2): when the transferee enters a new hypothecation agreement, an entry is made in the RC.
+- 51(3): an entry is cancelled on proof of termination of the agreement.
+- 51(4): no entry of transfer of ownership of a vehicle held under hypothecation is made except with the written consent of the financier named in the RC.
+- 51(5): on owner default the financier may obtain a fresh RC in its name.
+
+[SRC-FORM29] Form 29 - Notice of transfer of ownership
+- Notice by the registered owner (transferor) that the vehicle was sold and delivered; states the RC and insurance were handed over; where the vehicle is under hypothecation the financier signs as consent.
+
+[SRC-FORM30] Form 30 - Application for intimation and transfer of ownership
+- Purchaser's declaration and request to record the transfer. Has a Consent of the Financier section; the RA records the transfer under continuation of the hypothecation agreement. Enclosures: original RC, insurance, address proof, PUC, NOC from financier.
+
+[SRC-FORM34] Form 34 - Entry of hypothecation agreement after registration; signed by owner and financier.
+[SRC-FORM35] Form 35 - Notice of termination of hypothecation agreement; signed by the registered owner and the financier with official seal.
+[SRC-PACK-DATASET] Synthetic case records with demo finding codes (not legal rules).
+[SRC-SPEC-SCOPE] Copilot scope and refusal policy.
