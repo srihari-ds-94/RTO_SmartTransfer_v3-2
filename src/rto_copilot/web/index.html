@@ -37,6 +37,13 @@
   .row { display:flex; gap:8px; } .row > * { flex:1; }
   .suggest { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
   .suggest button { background:var(--mint); color:var(--navy); font-weight:500; padding:5px 11px; font-size:13px; }
+  .src { border:1px solid var(--line); border-left:3px solid var(--teal); border-radius:8px; padding:8px 10px; margin-top:6px; font-size:13px; background:#fbfefd; }
+  .src.bad { border-left-color:var(--bad); background:var(--badbg); }
+  .src a { color:var(--navy); } .src q { display:block; color:var(--mute); margin-top:4px; quotes:none; font-style:italic; }
+  .evhead { margin-top:10px; font-weight:600; color:var(--navy); font-size:13px; }
+  .ref { margin-top:10px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:13px; background:#fff; }
+  .bar { display:flex; align-items:center; gap:8px; margin:3px 0; } .bar span:first-child { width:70px; color:var(--mute); }
+  .bar i { display:block; height:8px; border-radius:4px; background:var(--teal); } .bar div { flex:1; background:var(--line); border-radius:4px; }
   footer { text-align:center; color:var(--mute); font-size:12px; padding:18px; }
 </style>
 </head>
@@ -50,6 +57,9 @@
     <div id="caseView" class="muted" style="margin-top:12px">Select a case to see its checks and deadlines. This part needs no AI model.</div>
     <label for="today">Today's date</label>
     <input id="today" type="date">
+    <label for="evalq">Test question from the eval set (dev split)</label>
+    <select id="evalq"><option value="">None, ask my own question</option></select>
+    <div class="muted" style="margin-top:6px">Picking one scores the answer against the reference answer (BLEU, ROUGE and the six checks).</div>
   </aside>
   <section class="card">
     <h2>Ask</h2>
@@ -80,6 +90,17 @@ async function loadCases() {
   } catch (e) { $("caseView").textContent = "Could not load cases."; }
 }
 
+let evalRows = {}, evalId = null;
+async function loadEval() {
+  try {
+    (await api("/api/evalset")).forEach(r => { evalRows[r.query_id] = r; const o = el("option", "", `${r.query_id}  ${r.query.slice(0, 48)}`); o.value = r.query_id; $("evalq").appendChild(o); });
+  } catch (e) { /* optional */ }
+}
+$("evalq").onchange = () => {
+  const r = evalRows[$("evalq").value]; evalId = r ? r.query_id : null; if (!r) return;
+  $("q").value = r.query; $("case").value = r.case_id || ""; if (r.reference_date) $("today").value = r.reference_date; showCase();
+};
+
 async function showCase() {
   const id = $("case").value, box = $("caseView"); box.replaceChildren();
   if (!id) { box.textContent = "Select a case to see its checks and deadlines. This part needs no AI model."; return; }
@@ -109,18 +130,62 @@ function renderAnswer(res) {
   wrap.append(chip((f.behavior || "").replace(/_/g, " ").toLowerCase(), kind));
   if (f.case_status) wrap.append(chip(f.case_status.replace(/_/g, " ").toLowerCase(), f.case_status === "REVIEW_REQUIRED" ? "warn" : ""));
   wrap.append(el("div", "", f.answer || ""));
+  wrap.append(evidenceBlock(res, f));
   (res.notices || []).forEach(n => wrap.append(el("div", "notice", n)));
   (f.clarifying_questions || []).forEach(q => wrap.append(el("div", "muted", "Question: " + q)));
   (f.drafts || []).forEach(d => wrap.append(draftBox(d)));
   const parts = [];
   if ((f.findings || []).length) parts.push(["Findings", f.findings.map(x => `${x.code}: ${x.evidence || ""}`)]);
   if ((f.deadlines || []).length) parts.push(["Deadlines", f.deadlines.map(x => `${x.rule_id}: ${x.due_date} (${x.status})`)]);
-  if ((f.citations || []).length) parts.push(["Sources", f.citations.map(x => x.source_id + (x.locator ? " , " + x.locator : ""))]);
   parts.push(["How it was answered", [`tools: ${(res.tools || []).join(", ") || "none"}`, `model calls: ${res.llm_calls}, tokens: ${res.tokens}, ${res.latency_s}s${res.cache_hit ? ", cached" : ""}`]]);
   const det = el("details"); det.append(el("summary", "", "Details"));
   parts.forEach(([h, items]) => { det.append(el("div", "muted", h)); items.forEach(i => det.append(el("div", "", i))); });
   wrap.append(det);
   return wrap;
+}
+
+function evidenceBlock(res, f) {
+  const ev = res.evidence || {}, box = el("div"), cites = ev.citations || [];
+  if (ev.level === "n/a" && !cites.length) return box;
+  box.append(el("div", "evhead", "Sources behind this answer"));
+  if (ev.level === "none") box.append(el("div", "notice", "No source is cited. Treat this answer as unverified."));
+  cites.forEach(c => {
+    const d = el("div", "src" + (c.in_registry ? "" : " bad"));
+    const title = el("div"); title.append(el("b", "", c.source_id), document.createTextNode("  " + c.title));
+    d.append(title);
+    const line = el("div", "muted");
+    line.textContent = (c.locator ? c.locator + "  " : "") + (c.in_registry ? "" : "Not in the source registry. Possible hallucination.");
+    if (c.url) { const a = el("a", "", "open source"); a.href = c.url; a.target = "_blank"; a.rel = "noopener"; line.append(a); }
+    d.append(line);
+    if (c.snippet) { const det = el("details"); det.append(el("summary", "", "Show the passage")); det.append(el("q", "", c.snippet)); d.append(det); }
+    box.append(d);
+  });
+  if (ev.source_overlap !== null && ev.source_overlap !== undefined) {
+    const kind = ev.level === "high" ? "" : (ev.level === "medium" ? "warn" : "bad");
+    const row = el("div"); row.style.marginTop = "6px";
+    row.append(chip(`Source overlap ${Math.round(ev.source_overlap * 100)}% (${ev.level})`, kind),
+               el("span", "muted", "Share of the answer's key words found in the cited passages. A hint, not proof."));
+    box.append(row);
+  }
+  if (res.reference) box.append(referenceBlock(res.reference));
+  return box;
+}
+
+function referenceBlock(r) {
+  const box = el("div", "ref"); box.append(el("b", "", `Scored against reference ${r.query_id}`));
+  [["BLEU", r.text.bleu], ["ROUGE-1", r.text.rouge1], ["ROUGE-2", r.text.rouge2], ["ROUGE-L", r.text.rougeL]].forEach(([n, v]) => {
+    const b = el("div", "bar"), t = el("div"), i = el("i"); i.style.width = Math.round(v * 100) + "%"; t.append(i);
+    b.append(el("span", "", n), t, el("span", "", v.toFixed(2))); box.append(b);
+  });
+  const names = {behavior_ok: "behaviour", include_all: "key facts", findings_ok: "finding codes", citations_ok: "citations", drafts_ok: "drafts not sent"};
+  const row = el("div"); row.style.marginTop = "6px";
+  Object.entries(names).forEach(([k, n]) => row.append(chip(n, r.checks[k] ? "" : "bad")));
+  row.append(chip(r.checks.end_to_end ? "PASS end to end" : "FAIL end to end", r.checks.end_to_end ? "" : "bad"));
+  box.append(row);
+  if (r.failure_tags) box.append(el("div", "muted", "Failure tags: " + r.failure_tags));
+  const det = el("details"); det.append(el("summary", "", "Show the reference answer"), el("div", "", r.gold_answer)); box.append(det);
+  box.append(el("div", "muted", "BLEU and ROUGE only count shared words. The six checks decide pass or fail."));
+  return box;
 }
 
 function draftBox(d) {
@@ -147,7 +212,8 @@ async function send() {
   chat.append(el("div", "msg you", q)); $("q").value = ""; btn.disabled = true; $("status").textContent = "Thinking...";
   try {
     const res = await api("/api/ask", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({session_id: sid, query: q, case_id: $("case").value || null, today: $("today").value || null})});
+      body: JSON.stringify({session_id: sid, query: q, case_id: $("case").value || null, today: $("today").value || null, eval_id: (evalId && evalRows[evalId] && evalRows[evalId].query === q) ? evalId : null})});
+    evalId = null; $("evalq").value = "";
     chat.append(renderAnswer(res));
   } catch (e) { chat.append(el("div", "msg bot notice", e.message)); }
   btn.disabled = false; $("status").textContent = ""; chat.lastChild.scrollIntoView({behavior: "smooth", block: "nearest"});
@@ -156,7 +222,7 @@ async function send() {
 $("send").onclick = send;
 $("q").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) send(); });
 $("case").onchange = showCase; $("today").onchange = showCase;
-loadCases();
+loadCases(); loadEval();
 </script>
 </body>
 </html>

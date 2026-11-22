@@ -17,7 +17,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
-from . import config, tools
+from . import config, tools, evidence, scoring, textmetrics
 
 _DECISIONS = ("approved_for_manual_use", "rejected", "needs_changes")
 
@@ -27,6 +27,7 @@ class AskIn(BaseModel):
     query: str = Field(max_length=2000)
     case_id: str | None = None
     today: str | None = None
+    eval_id: str | None = None   # demo: score this answer against the eval set's reference answer
 
 
 class ReviewIn(BaseModel):
@@ -35,6 +36,12 @@ class ReviewIn(BaseModel):
     decision: str
     draft: dict
     note: str = Field(default="", max_length=500)
+
+
+def _eval_rows() -> dict[str, dict]:
+    """Dev rows of the current eval set (the test split is never offered in the UI)."""
+    with config.EVAL.open(encoding="utf-8-sig", newline="") as f:
+        return {r["query_id"]: r for r in csv.DictReader(f) if r["split"] == "dev"}
 
 
 def _cases() -> list[dict]:
@@ -75,6 +82,11 @@ def create_app(copilot=None) -> FastAPI:
         return [{"case_id": c["case_id"], "scenario": c["scenario"], "seller": c["seller_name"],
                  "buyer": c["buyer_name"], "sale_date": c["sale_date"]} for c in _cases()]
 
+    @app.get("/api/evalset")
+    def evalset():
+        return [{"query_id": r["query_id"], "category": r["category"], "query": r["query"], "case_id": r["case_id"] or None,
+                 "reference_date": r["reference_date"] or None} for r in _eval_rows().values()]
+
     @app.get("/api/case/{case_id}")
     def case(case_id: str, today: str | None = None):
         """Deterministic view: document findings, status and deadlines. No LLM involved."""
@@ -97,7 +109,24 @@ def create_app(copilot=None) -> FastAPI:
         query = body.query.strip()
         if body.case_id and body.case_id.lower() not in query.lower():
             query = f"Case {body.case_id}: {query}"
-        return c.ask(body.session_id, query, body.today)
+        row = _eval_rows().get(body.eval_id) if body.eval_id else None
+        res = c.ask(body.session_id, query, body.today)
+        final = res.get("final") or {}
+        try:
+            res["evidence"] = evidence.resolve(final, query, getattr(c.agent, "search", None))
+        except Exception as exc:
+            res["evidence"] = {"citations": [], "source_overlap": None, "level": "n/a", "error": str(exc)}
+        if row and res.get("llm_calls", 0) + int(res.get("cache_hit", False)) > 0:
+            known = set(c.agent.known_sources) | {x["source_id"] for x in getattr(c.agent.search.ret, "chunks", [])}
+            checks = scoring.score(row, final, known)
+            res["reference"] = {"query_id": row["query_id"], "gold_answer": row["gold_answer"],
+                                "expected_behavior": row["expected_behavior"],
+                                "text": textmetrics.text_scores(str(final.get("answer", "")), row["gold_answer"]),
+                                "checks": {k: checks[k] for k in ("behavior_ok", "include_all", "findings_ok",
+                                                                  "citations_ok", "drafts_ok", "end_to_end")},
+                                "must_not_violation": checks["must_not_violation"],
+                                "failure_tags": checks["failure_tags"]}
+        return res
 
     @app.post("/api/review")
     def review(body: ReviewIn):

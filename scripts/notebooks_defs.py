@@ -452,6 +452,53 @@ print("  tools that send, file, pay or approve:", hitl["tools_that_send_file_pay
 * Test refusal behaviour is weaker on **ASK_CLARIFICATION** (1 of 3): the copilot sometimes answers with a caveat
   instead of asking. That is where the 19 clarification rows in v2 give a better read.
 """),
+        md("""
+## 5. BLEU and ROUGE against the reference answers
+
+These count shared words between the copilot's answer and the gold answer. BLEU rewards exact phrase matches
+(1 to 4 words), ROUGE-1 and ROUGE-2 count shared words and word pairs, ROUGE-L follows the longest shared word order.
+They are computed in `rto_copilot.textmetrics` (pure Python, checked against the `rouge-score` and `sacrebleu` packages).
+"""),
+        code('''
+from rto_copilot import textmetrics as TM
+gold = pd.read_csv(config.eval_path("v2")).set_index("query_id")["gold_answer"]
+rows = []
+for name, split in [("w3_dev_final", "dev"), ("w3_test_final", "test")]:
+    for r in nbkit.agent_run(name):
+        ans = str((r.get("final") or {}).get("answer", ""))
+        rows.append({"split": split, "passed": bool(r["end_to_end"]), "behaviour": r["expected_behavior"],
+                     **TM.text_scores(ans, gold[r["query_id"]])})
+tm = pd.DataFrame(rows)
+print(tm.groupby("split")[["bleu", "rouge1", "rouge2", "rougeL"]].mean().round(3))
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.8))
+m = tm.groupby("split")[["bleu", "rouge1", "rouge2", "rougeL"]].mean()
+x = np.arange(4); w = 0.38
+axes[0].bar(x - w/2, m.loc["dev"], w, color=nbkit.TEAL, label="dev (n=57)")
+axes[0].bar(x + w/2, m.loc["test"], w, color=nbkit.NAVY, label="test (n=34)")
+axes[0].set_xticks(x); axes[0].set_xticklabels(["BLEU", "ROUGE-1", "ROUGE-2", "ROUGE-L"]); axes[0].set_ylim(0, 0.6)
+axes[0].set_title("Word overlap is almost the same on dev and test"); axes[0].legend(frameon=False)
+pf = tm.groupby("passed")["rougeL"].mean()
+axes[1].bar(["failed end to end", "passed end to end"], [pf[False], pf[True]], color=[nbkit.GREY, nbkit.TEAL])
+for i, v in enumerate([pf[False], pf[True]]):
+    axes[1].text(i, v + 0.01, f"{v:.2f}", ha="center")
+axes[1].set_ylim(0, 0.6); axes[1].set_title("ROUGE-L, passing vs failing answers")
+plt.tight_layout(); plt.show()
+print("Correlation of ROUGE-L with pass/fail:", round(np.corrcoef(tm.rougeL, tm.passed.astype(int))[0, 1], 2))
+from scipy.stats import mannwhitneyu
+print("ROUGE-L dev vs test, Mann-Whitney p =", round(mannwhitneyu(tm[tm.split == "dev"].rougeL, tm[tm.split == "test"].rougeL).pvalue, 2))
+'''),
+        md("""
+**Reading for the business.**
+
+* Overlap scores are low (ROUGE-L about 0.26 to 0.27, BLEU about 0.10) because the copilot writes longer, more
+  careful answers than the short gold sentences. Low does not mean wrong.
+* Dev and test look the same on these metrics (ROUGE-L 0.27 vs 0.26, p about 0.6), while the six-check end-to-end
+  rate fell from 56% to 32%. **BLEU and ROUGE would not have shown the generalisation drop.** The drop sits in exact
+  facts and citations, which word overlap cannot see.
+* Passing answers score only a little higher (ROUGE-L 0.30 vs 0.22 on dev, correlation about 0.3). Use these
+  as a secondary view of wording. The six checks stay the pass/fail rule.
+"""),
     ])
 
 

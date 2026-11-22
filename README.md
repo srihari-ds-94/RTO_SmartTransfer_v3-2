@@ -20,6 +20,8 @@ Notebooks: open `notebooks/00_Overview.ipynb` in VS Code and pick the `.venv` ke
 and switches itself off while the key is missing. Tests: `.venv/bin/python -m pytest`.
 
 Without a key the page still shows case checks and deadlines. Asking the copilot needs the model.
+In the UI every answer lists its sources (title, locator, link and the cited passage) with a source-overlap hint, and
+the "Test question from the eval set" picker scores the live answer with BLEU, ROUGE and the six checks.
 The first question downloads the retrieval models (about 1.3 GB, once), so it is slow the first time.
 
 Keep `.env` and `certs/` inside the team. The team key allows one active request at a time, so do not run the UI and an
