@@ -1,1 +1,0 @@
-{"text": "{\"behavior\": \"ANSWER\", \"reason\": \"In-scope; loan scenarios require specific forms.\", \"role\": \"seller\", \"case_id\": null, \"transfer_date\": null, \"steps\": [{\"tool\": \"loan_procedure\", \"args\": {\"scenario\": \"LOAN_ACTIVE_WITH_CONSENT\"}}]}", "latency_s": 2.27, "prompt_tokens": 2332, "completion_tokens": 66}

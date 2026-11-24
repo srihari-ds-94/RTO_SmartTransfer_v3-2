@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RTO SmartTransfer Copilot: trace dashboard</title>
+<style>
+  :root { --navy:#0F2A4A; --teal:#0E8C6F; --mint:#D6EEE6; --sky:#6FA8DC; --amber:#D98E04; --ink:#1d2b3a; --mute:#6b7a8a; --line:#e3e9ee; --bg:#f7f9fb; --bad:#b42318; --badbg:#fdecea; --warn:#b45309; --warnbg:#fdf3e2; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 Calibri,"Segoe UI",system-ui,sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:12px 24px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  h1 { font:600 19px Cambria,Georgia,serif; color:var(--navy); margin:0; }
+  h2 { font:600 15px Cambria,Georgia,serif; color:var(--navy); margin:0 0 8px; }
+  header .sp { flex:1; }
+  select,input,button { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+  button { background:var(--teal); color:#fff; border:0; font-weight:600; cursor:pointer; }
+  main { max-width:1280px; margin:16px auto; padding:0 16px; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
+  .kpi { background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .kpi b { display:block; font:600 22px Cambria,Georgia,serif; color:var(--navy); } .kpi span { color:var(--mute); font-size:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:12px; margin-top:12px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .muted { color:var(--mute); font-size:12px; }
+  .stack { display:flex; height:26px; border-radius:6px; overflow:hidden; margin:8px 0; }
+  .stack div { display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; white-space:nowrap; }
+  .legend span { display:inline-block; margin-right:12px; font-size:12px; } .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; } td,th { text-align:left; padding:4px 6px; border-bottom:1px solid var(--line); } th { color:var(--mute); font-weight:600; }
+  td.n, th.n { text-align:right; }
+  .row { display:flex; align-items:center; gap:8px; margin:3px 0; } .row .lab { width:150px; font-size:12px; color:var(--mute); } .row .bar { flex:1; background:var(--line); border-radius:4px; height:10px; } .row .bar i { display:block; height:10px; border-radius:4px; background:var(--teal); } .row .v { width:34px; text-align:right; font-size:12px; }
+  .explorer { display:grid; grid-template-columns:340px 1fr; gap:12px; margin-top:12px; }
+  @media (max-width:900px){ .explorer{ grid-template-columns:1fr; } }
+  .list { max-height:640px; overflow:auto; } .item { padding:7px 8px; border-bottom:1px solid var(--line); cursor:pointer; border-radius:6px; } .item:hover { background:var(--bg); } .item.sel { background:var(--mint); }
+  .item .q { font-size:13px; } .item .m { font-size:11px; color:var(--mute); }
+  .chip { display:inline-block; padding:1px 8px; margin:2px 4px 2px 0; border-radius:99px; font-size:11px; font-weight:600; background:var(--mint); color:var(--navy); }
+  .chip.bad { background:var(--badbg); color:var(--bad); } .chip.warn { background:var(--warnbg); color:var(--warn); } .chip.info { background:#e8eef5; color:var(--navy); font-weight:500; }
+  .wf { margin-top:8px; } .wfrow { display:grid; grid-template-columns:230px 1fr 70px; align-items:center; gap:8px; padding:2px 0; cursor:pointer; border-radius:4px; } .wfrow:hover { background:var(--bg); } .wfrow.sel { background:var(--mint); }
+  .wfname { font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .wftrack { position:relative; height:14px; background:#f0f3f6; border-radius:3px; } .wftrack i { position:absolute; top:0; height:14px; border-radius:3px; min-width:2px; } .wfd { font-size:11px; color:var(--mute); text-align:right; }
+  pre { background:#f4f7fa; border:1px solid var(--line); border-radius:8px; padding:8px; font-size:12px; overflow:auto; max-height:200px; white-space:pre-wrap; word-break:break-word; margin:6px 0; }
+  .sec { margin-top:12px; } .ans { background:#fbfefd; border:1px solid var(--line); border-left:3px solid var(--teal); border-radius:6px; padding:8px 10px; white-space:pre-wrap; }
+  .note { background:var(--warnbg); color:var(--warn); border-radius:8px; padding:6px 10px; font-size:12px; margin-top:8px; }
+  footer { text-align:center; color:var(--mute); font-size:12px; padding:18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>RTO SmartTransfer Copilot: trace dashboard</h1>
+  <span class="muted">Synapse6 · every number below comes from recorded OpenTelemetry spans</span>
+  <span class="sp"></span>
+  <label class="muted" for="run">Run</label><select id="run"></select>
+  <button id="refresh" style="display:none">Refresh live</button>
+</header>
+<main>
+  <div id="note"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="grid">
+    <div class="card"><h2>Where a turn spends its time</h2><div id="stage"></div></div>
+    <div class="card"><h2>Latency per query</h2><div id="hist"></div></div>
+    <div class="card"><h2>Tools</h2><div id="tools"></div></div>
+    <div class="card"><h2>Outcomes and failure taxonomy</h2><div id="outcomes"></div></div>
+  </div>
+  <div class="explorer">
+    <div class="card">
+      <h2>Queries in this run</h2>
+      <div style="display:flex;gap:6px;margin-bottom:8px"><input id="search" placeholder="Search question or id" style="flex:1"><select id="filter"><option value="all">All</option><option value="pass">Passed</option><option value="fail">Failed</option></select></div>
+      <div class="list" id="list"></div>
+    </div>
+    <div class="card" id="detail"></div>
+  </div>
+</main>
+<footer>Spans: planner, each model call (with token counts), each tool call, compose, critic and revision. Navy bars are model calls, teal bars are tools, blue is the planner, amber is the critic.</footer>
+<script>
+const DATA = /*__DATA__*/null;
+const $ = id => document.getElementById(id);
+const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x !== undefined) e.textContent = x; return e; };
+const chip = (x, k) => el("span", "chip " + (k || ""), x);
+const fmtS = ms => (ms / 1000).toFixed(1) + " s";
+const pct = (v, d = 0) => (v * 100).toFixed(d) + "%";
+const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+const q = (a, p) => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.round(p * (s.length - 1)))]; };
+const COLORS = {planner: "#6FA8DC", tools: "#0E8C6F", compose: "#0F2A4A", critic: "#D98E04", other: "#8A97A5"};
+let runs = DATA.runs, cur = 0, sel = 0, view = [];
+
+function spanColor(n) { return n.startsWith("llm.") ? "#0F2A4A" : n.startsWith("tool.") ? "#0E8C6F" : n === "critic" ? "#D98E04" : n === "planner" ? "#6FA8DC" : "#B8C4D0"; }
+function stageMs(t) {
+  const sum = n => t.spans.filter(s => s.n === n).reduce((a, s) => a + s.d, 0);
+  const planner = sum("planner"), tools = sum("executor.tools"), compose = sum("executor.compose"), critic = sum("critic");
+  return {planner, tools, compose, critic, other: Math.max(t.ms - planner - tools - compose - critic, 0)};
+}
+function init() {
+  const sel = $("run"); sel.replaceChildren();
+  runs.forEach((r, i) => { const o = el("option", "", `${r.label} (${r.traces.length})`); o.value = i; sel.appendChild(o); });
+  sel.onchange = () => { cur = +sel.value; sel_ = 0; render(); };
+  if (DATA.live) { $("refresh").style.display = ""; $("refresh").onclick = loadLive; }
+  $("search").oninput = renderList; $("filter").onchange = renderList;
+  render();
+}
+let sel_ = 0;
+async function loadLive() {
+  try {
+    const r = await (await fetch("/api/traces/live")).json();
+    const i = runs.findIndex(x => x.id === "live");
+    if (i >= 0) runs[i] = r; else runs.unshift(r);
+    cur = runs.findIndex(x => x.id === "live"); sel_ = Math.max(r.traces.length - 1, 0); init(); $("run").value = cur; render();
+  } catch (e) { $("note").replaceChildren(el("div", "note", "Could not load live traces: " + e.message)); }
+}
+function render() {
+  const run = runs[cur]; $("note").replaceChildren();
+  if (run.model) $("note").append(el("div", "muted", "Model: " + run.model));
+  if (run.live && !run.traces.length) $("note").append(el("div", "note", "No live traces yet. Ask a question in the app, then press Refresh live."));
+  renderKpis(run); renderStage(run); renderHist(run); renderTools(run); renderOutcomes(run); renderList();
+}
+function renderKpis(run) {
+  const T = run.traces, k = $("kpis"); k.replaceChildren();
+  const graded = T.filter(t => t.passed !== null && t.passed !== undefined);
+  const items = [
+    ["Queries traced", T.length], ["Spans recorded", T.reduce((a, t) => a + t.spans.length, 0)],
+    ["Avg latency", fmtS(avg(T.map(t => t.ms)))], ["p95 latency", fmtS(q(T.map(t => t.ms), 0.95))],
+    ["Tool calls / query", avg(T.map(t => t.tool_calls)).toFixed(2)], ["Model calls / query", avg(T.map(t => t.llm_calls)).toFixed(2)],
+    ["Tokens / query", Math.round(avg(T.map(t => t.tokens))).toLocaleString()],
+    ["Tasks completed", pct(T.length ? T.filter(t => t.stop_reason !== "budget").length / T.length : 0)],
+  ];
+  if (graded.length) items.push(["End-to-end pass", pct(graded.filter(t => t.passed).length / graded.length, 1)]);
+  items.forEach(([l, v]) => { const d = el("div", "kpi"); d.append(el("b", "", String(v)), el("span", "", l)); k.append(d); });
+}
+function renderStage(run) {
+  const box = $("stage"); box.replaceChildren();
+  const T = run.traces; if (!T.length) { box.textContent = "No data."; return; }
+  const tot = {planner: 0, tools: 0, compose: 0, critic: 0, other: 0};
+  T.forEach(t => { const s = stageMs(t); Object.keys(tot).forEach(k => tot[k] += s[k]); });
+  const all = Object.values(tot).reduce((a, b) => a + b, 0) || 1;
+  const bar = el("div", "stack"), leg = el("div", "legend");
+  const names = {planner: "Planner", tools: "Tools", compose: "Compose (model)", critic: "Critic (rules)", other: "Other"};
+  Object.keys(tot).forEach(k => {
+    const w = tot[k] / all * 100;
+    if (w > 0.2) { const d = el("div", "", w >= 7 ? w.toFixed(0) + "%" : ""); d.style.width = w + "%"; d.style.background = COLORS[k]; bar.append(d); }
+    const s = el("span"); const i = el("i"); i.style.background = COLORS[k]; s.append(i, document.createTextNode(`${names[k]} ${fmtS(tot[k] / T.length)}`)); leg.append(s);
+  });
+  box.append(bar, leg, el("div", "muted", "Average seconds per query in each stage. The model's compose call, including revisions, takes about half the turn."));
+}
+function renderHist(run) {
+  const box = $("hist"); box.replaceChildren();
+  const T = run.traces; if (!T.length) { box.textContent = "No data."; return; }
+  const step = 5000, nb = Math.max(1, Math.ceil(Math.max(...T.map(t => t.ms)) / step)), counts = new Array(nb).fill(0);
+  T.forEach(t => counts[Math.min(nb - 1, Math.floor(t.ms / step))]++);
+  const mx = Math.max(...counts), W = 340, H = 120, bw = W / nb;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", `0 0 ${W} ${H + 22}`); svg.setAttribute("width", "100%");
+  counts.forEach((c, i) => {
+    const r = document.createElementNS(svg.namespaceURI, "rect"), h = c / mx * H;
+    r.setAttribute("x", i * bw + 1); r.setAttribute("y", H - h); r.setAttribute("width", Math.max(bw - 2, 1)); r.setAttribute("height", h); r.setAttribute("fill", "#0E8C6F"); r.setAttribute("rx", 2);
+    const tt = document.createElementNS(svg.namespaceURI, "title"); tt.textContent = `${i * 5} to ${(i + 1) * 5} s: ${c} queries`; r.appendChild(tt); svg.appendChild(r);
+    if (nb <= 14 || i % 2 === 0) { const x = document.createElementNS(svg.namespaceURI, "text"); x.setAttribute("x", i * bw + bw / 2); x.setAttribute("y", H + 14); x.setAttribute("font-size", "9"); x.setAttribute("text-anchor", "middle"); x.setAttribute("fill", "#6b7a8a"); x.textContent = i * 5; svg.appendChild(x); }
+  });
+  box.append(svg, el("div", "muted", `Seconds per query in 5 s buckets. Median ${fmtS(q(T.map(t => t.ms), 0.5))}, p95 ${fmtS(q(T.map(t => t.ms), 0.95))}.`));
+}
+function renderTools(run) {
+  const box = $("tools"); box.replaceChildren();
+  const by = {};
+  run.traces.forEach(t => t.spans.filter(s => s.n.startsWith("tool.")).forEach(s => { (by[s.n.slice(5)] = by[s.n.slice(5)] || []).push(s); }));
+  const names = Object.keys(by).sort((a, b) => by[b].length - by[a].length);
+  if (!names.length) { box.textContent = "No tool calls."; return; }
+  const tb = el("table"); tb.innerHTML = "<tr><th>Tool</th><th class='n'>Calls</th><th class='n'>Errors</th><th class='n'>Avg ms</th><th class='n'>p95 ms</th></tr>";
+  names.forEach(n => { const d = by[n].map(s => s.d); const tr = el("tr"); [n, by[n].length, by[n].filter(s => s.e || (s.a && s.a.error)).length, avg(d).toFixed(1), q(d, 0.95).toFixed(1)].forEach((v, i) => tr.appendChild(el("td", i ? "n" : "", String(v)))); tb.append(tr); });
+  box.append(tb, el("div", "muted", "Retrieval (search_corpus) is the slow tool because the reranker runs on a CPU. Every other tool is near-instant."));
+}
+function renderOutcomes(run) {
+  const box = $("outcomes"); box.replaceChildren();
+  const g = run.traces.filter(t => t.passed !== null && t.passed !== undefined);
+  if (!g.length) { box.append(el("div", "muted", "This run has no scored answers (live traces are not graded).")); const b = {}; run.traces.forEach(t => b[t.behavior || "?"] = (b[t.behavior || "?"] || 0) + 1); Object.entries(b).forEach(([k, v]) => box.append(row(k.replace(/_/g, " ").toLowerCase(), v, run.traces.length))); return; }
+  const f = {}; g.forEach(t => f[t.failure || "PASS"] = (f[t.failure || "PASS"] || 0) + 1);
+  Object.entries(f).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => box.append(row(k.replace(/_/g, " ").toLowerCase(), v, g.length)));
+  box.append(el("div", "muted", "Each failed query gets one primary cause, checked in this order: tool-call error, retrieval miss, hallucination, reasoning error."));
+}
+function row(label, v, total) {
+  const r = el("div", "row"), b = el("div", "bar"), i = el("i"); i.style.width = (v / total * 100) + "%";
+  if (/fail|error|miss|halluc/.test(label)) i.style.background = "#B42318"; b.append(i);
+  r.append(el("span", "lab", label), b, el("span", "v", String(v))); return r;
+}
+function renderList() {
+  const run = runs[cur], box = $("list"); box.replaceChildren();
+  const text = $("search").value.toLowerCase(), f = $("filter").value;
+  view = run.traces.map((t, i) => [t, i]).filter(([t]) => (f === "all" || (f === "pass" ? t.passed === true : t.passed === false)) &&
+    (!text || ((t.query || "") + " " + (t.query_id || "")).toLowerCase().includes(text)));
+  if (!view.length) box.textContent = "No queries match.";
+  view.forEach(([t, i]) => {
+    const d = el("div", "item" + (i === sel_ ? " sel" : "")); d.onclick = () => { sel_ = i; renderList(); renderDetail(); };
+    d.append(el("div", "q", (t.query_id ? t.query_id + "  " : "") + (t.query || "(no text)").slice(0, 90)));
+    const m = el("div", "m");
+    if (t.passed === true) m.append(chip("pass")); else if (t.passed === false) m.append(chip((t.failure || "fail").replace(/_/g, " ").toLowerCase(), "bad"));
+    m.append(document.createTextNode(` ${fmtS(t.ms)} · ${t.tool_calls} tool call${t.tool_calls === 1 ? "" : "s"} · ${t.llm_calls} model calls`)); d.append(m); box.append(d);
+  });
+  renderDetail();
+}
+function renderDetail() {
+  const run = runs[cur], box = $("detail"); box.replaceChildren();
+  const t = run.traces[sel_]; if (!t) { box.append(el("div", "muted", "Pick a query on the left.")); return; }
+  box.append(el("h2", "", "Execution trace"), el("div", "", t.query || "(no text)"));
+  const meta = el("div"); meta.style.marginTop = "6px";
+  if (t.passed === true) meta.append(chip("PASS"));
+  if (t.passed === false) meta.append(chip("FAIL: " + (t.failure || "").replace(/_/g, " ").toLowerCase(), "bad"));
+  if (t.category) meta.append(chip("category " + t.category, "info"));
+  meta.append(chip("answered " + (t.behavior || "?").replace(/_/g, " ").toLowerCase(), "info"));
+  if (t.expected) meta.append(chip("expected " + t.expected.replace(/_/g, " ").toLowerCase(), t.expected === t.behavior ? "info" : "warn"));
+  [fmtS(t.ms), t.tokens + " tokens", t.llm_calls + " model calls", t.tool_calls + (t.tool_calls === 1 ? " tool call" : " tool calls"), "stop: " + t.stop_reason].forEach(x => meta.append(chip(x, "info")));
+  box.append(meta);
+  // waterfall (tree order)
+  const kids = {}; t.spans.forEach(s => (kids[s.p] = kids[s.p] || []).push(s));
+  const ids = new Set(t.spans.map(s => s.i)), rows = [];
+  const walk = (s, d) => { rows.push([s, d]); (kids[s.i] || []).sort((a, b) => a.s - b.s).forEach(c => walk(c, d + 1)); };
+  t.spans.filter(s => !s.p || !ids.has(s.p)).forEach(s => walk(s, 0));
+  const total = Math.max(t.ms, 1), wf = el("div", "wf"), attrBox = el("pre"); attrBox.textContent = "Click a bar to see that span's recorded attributes.";
+  rows.forEach(([s, d]) => {
+    const r = el("div", "wfrow"); r.onclick = () => { document.querySelectorAll(".wfrow").forEach(x => x.classList.remove("sel")); r.classList.add("sel"); attrBox.textContent = JSON.stringify(s.a, null, 1); };
+    const n = el("div", "wfname", "  ".repeat(d) + s.n); n.title = s.n;
+    const tr = el("div", "wftrack"), bar = el("i"); bar.style.left = (s.s / total * 100) + "%"; bar.style.width = Math.max(s.d / total * 100, 0.3) + "%"; bar.style.background = s.e ? "#B42318" : spanColor(s.n); tr.append(bar);
+    r.append(n, tr, el("div", "wfd", s.d >= 1000 ? fmtS(s.d) : s.d.toFixed(0) + " ms")); wf.append(r);
+  });
+  box.append(el("div", "sec muted", "Span waterfall (time runs left to right, whole bar = one query)"), wf, attrBox);
+  // plan, tools, critic
+  if (t.plan) {
+    const s = el("div", "sec"); s.append(el("h2", "", "Planner decision"));
+    s.append(el("div", "", `${t.plan.behavior || ""} (role ${t.plan.role || "?"}, case ${t.plan.case_id || "none"}). ${t.plan.reason || ""}`));
+    (t.plan.steps || []).forEach(st => s.append(chip(st.tool + " " + JSON.stringify(st.args || {}).slice(0, 80), "info"))); box.append(s);
+  }
+  if (t.tools && t.tools.length) { const s = el("div", "sec"); s.append(el("h2", "", "Tool calls")); t.tools.forEach(c => s.append(chip(c.tool + " " + JSON.stringify(c.args || {}).slice(0, 80), c.error ? "bad" : "info"))); box.append(s); }
+  if (t.critic && t.critic.length) {
+    const s = el("div", "sec"); s.append(el("h2", "", "Critic rounds"));
+    t.critic.forEach(c => s.append(el("div", "muted", `Round ${c.round}: ` + ((c.issues || []).length ? c.issues.join(" | ") : "no issues"))));
+    box.append(s);
+  }
+  if (t.answer) {
+    const s = el("div", "sec"); s.append(el("h2", "", "Answer"), el("div", "ans", t.answer));
+    (t.citations || []).forEach(c => s.append(chip(c.source_id + (c.locator ? " , " + c.locator : ""))));
+    if (t.tags) s.append(el("div", "muted", "Failure tags: " + t.tags.replace(/;/g, ", "))); box.append(s);
+  }
+}
+init();
+</script>
+</body>
+</html>

@@ -114,6 +114,9 @@ class AnswerCache:
                 self.items.popitem(last=False)
 
 
+_TRACING_ON = False
+
+
 @dataclass
 class Settings:
     max_query_chars: int = 1000
@@ -157,6 +160,17 @@ class Copilot:
         STATE.mkdir(parents=True, exist_ok=True)
         tracing.setup(STATE / "traces.jsonl")
         return cls(Agent(client, T.CorpusSearch(), llm_critic=False), Settings.from_env())
+
+    @classmethod
+    def for_profile(cls, profile, search=None) -> "Copilot":
+        """A copilot bound to one model profile (see models.py). `search` can be shared between models."""
+        from . import tools as T
+        global _TRACING_ON
+        STATE.mkdir(parents=True, exist_ok=True)
+        if not _TRACING_ON:
+            tracing.setup(STATE / "traces.jsonl")
+            _TRACING_ON = True
+        return cls(Agent(profile.client(), search or T.CorpusSearch(), llm_critic=False), Settings.from_env())
 
     def ask(self, session_id: str, query: str, today: str | None = None) -> dict:
         started = time.time()

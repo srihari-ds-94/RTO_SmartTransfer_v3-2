@@ -22,6 +22,7 @@
   button:hover { filter:brightness(.95); } button:disabled { opacity:.5; cursor:default; }
   button.ghost { background:#fff; color:var(--navy); border:1px solid var(--line); }
   .chip { display:inline-block; padding:2px 9px; margin:2px 4px 2px 0; border-radius:99px; font-size:12px; font-weight:600; background:var(--mint); color:var(--navy); }
+  .chip.info { background:#e8eef5; color:var(--navy); font-weight:500; }
   .chip.warn { background:var(--warnbg); color:var(--warn); } .chip.bad { background:var(--badbg); color:var(--bad); }
   table { width:100%; border-collapse:collapse; font-size:13px; margin-top:6px; }
   td, th { text-align:left; padding:5px 4px; border-bottom:1px solid var(--line); vertical-align:top; } th { color:var(--mute); font-weight:600; }
@@ -48,10 +49,14 @@
 </style>
 </head>
 <body>
-<header><h1>RTO SmartTransfer Copilot</h1><span>Used-vehicle ownership transfer, one West Bengal RTO. Demo data only.</span></header>
+<header><h1>RTO SmartTransfer Copilot</h1><span>Used-vehicle ownership transfer, one West Bengal RTO. Demo data only.</span><a href="/dashboard" target="_blank" style="margin-left:auto;color:var(--teal);font-weight:600;text-decoration:none">Trace dashboard</a></header>
 <main>
   <aside class="card">
-    <h2>Case</h2>
+    <h2>Model</h2>
+    <label for="model">Which model answers</label>
+    <select id="model"></select>
+    <div id="modelNote" class="muted" style="margin-top:6px"></div>
+    <h2 style="margin-top:18px">Case</h2>
     <label for="case">Pick a demo case (optional)</label>
     <select id="case"><option value="">No case selected</option></select>
     <div id="caseView" class="muted" style="margin-top:12px">Select a case to see its checks and deadlines. This part needs no AI model.</div>
@@ -89,6 +94,26 @@ async function loadCases() {
     cases.forEach(c => { const o = el("option", "", `${c.case_id}  ${c.scenario.replace(/_/g, " ").toLowerCase()}`); o.value = c.case_id; $("case").appendChild(o); });
   } catch (e) { $("caseView").textContent = "Could not load cases."; }
 }
+
+let modelId = null, modelList = [];
+async function loadModels() {
+  const sel = $("model");
+  try {
+    const r = await api("/api/models"); modelList = r.models;
+    if (!modelId || !modelList.some(m => m.id === modelId && m.ready)) modelId = r.default;
+    sel.replaceChildren();
+    modelList.forEach(m => { const o = el("option", "", m.ready ? m.label : `${m.label} (not ready)`); o.value = m.id; o.disabled = !m.ready; sel.appendChild(o); });
+    if (modelId) sel.value = modelId;
+    noteModel();
+  } catch (e) { $("modelNote").textContent = "Could not load the model list."; }
+}
+function noteModel() {
+  const m = modelList.find(x => x.id === $("model").value);
+  $("modelNote").textContent = !m ? "No model is ready. Case checks still work." :
+    m.ready ? `Model id: ${m.model}` : m.reason;
+  if (!modelList.some(x => x.ready)) $("modelNote").textContent = "No model is ready. " + (modelList.map(x => `${x.label}: ${x.reason}`).join(" | "));
+}
+$("model").onchange = () => { modelId = $("model").value; noteModel(); $("chat").append(el("div", "msg bot muted", "Now answering with: " + ($("model").selectedOptions[0] || {}).text)); };
 
 let evalRows = {}, evalId = null;
 async function loadEval() {
@@ -128,6 +153,7 @@ function renderAnswer(res) {
   const f = res.final || {}, wrap = el("div", "msg bot");
   const kind = /REFUSE|ABSTAIN|ESCALATE/.test(f.behavior || "") ? "warn" : "";
   wrap.append(chip((f.behavior || "").replace(/_/g, " ").toLowerCase(), kind));
+  if (res.model) wrap.append(chip(res.model.label, "info"));
   if (f.case_status) wrap.append(chip(f.case_status.replace(/_/g, " ").toLowerCase(), f.case_status === "REVIEW_REQUIRED" ? "warn" : ""));
   wrap.append(el("div", "", f.answer || ""));
   wrap.append(evidenceBlock(res, f));
@@ -212,17 +238,17 @@ async function send() {
   chat.append(el("div", "msg you", q)); $("q").value = ""; btn.disabled = true; $("status").textContent = "Thinking...";
   try {
     const res = await api("/api/ask", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({session_id: sid, query: q, case_id: $("case").value || null, today: $("today").value || null, eval_id: (evalId && evalRows[evalId] && evalRows[evalId].query === q) ? evalId : null})});
+      body: JSON.stringify({session_id: sid, query: q, case_id: $("case").value || null, today: $("today").value || null, model_id: modelId, eval_id: (evalId && evalRows[evalId] && evalRows[evalId].query === q) ? evalId : null})});
     evalId = null; $("evalq").value = "";
     chat.append(renderAnswer(res));
-  } catch (e) { chat.append(el("div", "msg bot notice", e.message)); }
+  } catch (e) { chat.append(el("div", "msg bot notice", e.message + ((e.body && e.body.detail) ? " (" + e.body.detail + ")" : ""))); loadModels(); }
   btn.disabled = false; $("status").textContent = ""; chat.lastChild.scrollIntoView({behavior: "smooth", block: "nearest"});
 }
 
 $("send").onclick = send;
 $("q").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) send(); });
 $("case").onchange = showCase; $("today").onchange = showCase;
-loadCases(); loadEval();
+loadCases(); loadEval(); loadModels();
 </script>
 </body>
 </html>

@@ -32,13 +32,14 @@ def cache_dir() -> Path:
 
 
 class EndpointClient:
-    def __init__(self, base_url, api_key, model, json_mode, sleep, ca_cert=None, thinking=False):
+    def __init__(self, base_url, api_key, model, json_mode, sleep, ca_cert=None, thinking=False, template_kwargs=True):
         self.url = base_url.rstrip("/") + "/chat/completions"
         self.api_key = api_key
         self.model = model
         self.json_mode = json_mode
         self.sleep = sleep
         self.thinking = thinking
+        self.template_kwargs = template_kwargs
         self.ssl = ssl.create_default_context(cafile=ca_cert) if ca_cert else None
         cache_dir().mkdir(parents=True, exist_ok=True)
 
@@ -46,7 +47,7 @@ class EndpointClient:
         payload = {"model": self.model, "messages": messages, "temperature": temperature, "max_tokens": 900}
         if self.json_mode:
             payload["response_format"] = {"type": "json_object"}
-        if not self.thinking and "qwen3" in self.model.lower():
+        if self.template_kwargs and not self.thinking and "qwen3" in self.model.lower():
             payload["chat_template_kwargs"] = {"enable_thinking": False}
         key = hashlib.sha256(json.dumps([payload, sample], sort_keys=True).encode()).hexdigest()
         cached = cache_dir() / f"{key}.json"

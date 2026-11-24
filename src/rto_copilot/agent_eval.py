@@ -77,6 +77,7 @@ def main() -> int:
     ap.add_argument("--fault-rate", type=float, default=0.0)
     ap.add_argument("--usd-per-1m-tokens", type=float, default=0.0,
                     help="price used for the cost column; the course endpoint is free, so 0 by default")
+    ap.add_argument("--model-id", help="model profile from models.py / models.json (default: the course endpoint in .env)")
     ap.add_argument("--sleep", type=float, default=1.0)
     ap.add_argument("--fresh-cache", action="store_true",
                     help="start with an empty response cache so every LLM call is live and wall latency is real")
@@ -85,14 +86,22 @@ def main() -> int:
     config.load_dotenv()
     if args.split == "test":
         rb.check_test_split_allowed()
-    missing = config.missing_llm_env()
-    if missing:
-        sys.exit(f"Set {', '.join(missing)}.")
-    client = rb.EndpointClient(os.environ["LLM_BASE_URL"], os.environ["LLM_API_KEY"], os.environ["LLM_MODEL"],
-                               False, args.sleep, os.environ.get("LLM_CA_CERT"), False)
+    if args.model_id:
+        from . import models
+        prof = models.get_profile(args.model_id)
+        ok, why = prof.ready()
+        if not ok:
+            sys.exit(f"Model '{prof.id}' is not ready: {why}")
+        client = prof.client(args.sleep)
+    else:
+        missing = config.missing_llm_env()
+        if missing:
+            sys.exit(f"Set {', '.join(missing)}.")
+        client = rb.EndpointClient(os.environ["LLM_BASE_URL"], os.environ["LLM_API_KEY"], os.environ["LLM_MODEL"],
+                                   False, args.sleep, os.environ.get("LLM_CA_CERT"), False)
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    tag = ("_rulecritic" if args.no_llm_critic else "") + (f"_faults{args.fault_rate:g}" if args.fault_rate else "")
+    tag = (f"_{args.model_id}" if args.model_id else "") + ("_rulecritic" if args.no_llm_critic else "") + (f"_faults{args.fault_rate:g}" if args.fault_rate else "")
     out = RESULTS / f"agent_{stamp}{tag}"
     (out / "sessions").mkdir(parents=True)
     tracing.setup(out / "traces.jsonl")

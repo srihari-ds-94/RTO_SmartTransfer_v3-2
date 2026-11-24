@@ -1,1 +1,0 @@
-{"text": "{\"behavior\": \"ANSWER\", \"reason\": \"In-scope; pre-requisites for selling a car.\", \"role\": \"seller\", \"case_id\": \"DEMO-011\", \"transfer_date\": null, \"steps\": [{\"tool\": \"search_corpus\", \"args\": {\"query\": \"pre-requisites for selling a vehicle in West Bengal\"}}]}", "latency_s": 1.94, "prompt_tokens": 2412, "completion_tokens": 77}

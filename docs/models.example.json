@@ -1,0 +1,17 @@
+[
+  {
+    "id": "qwen25-7b-local",
+    "label": "Qwen2.5 7B (local, free)",
+    "base_url": "http://localhost:11434/v1",
+    "model": "qwen25-16k",
+    "kind": "local"
+  },
+  {
+    "id": "hf-qwen",
+    "label": "Qwen2.5 7B (Hugging Face router)",
+    "base_url": "https://router.huggingface.co/v1",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "api_key_env": "HF_TOKEN",
+    "kind": "hf"
+  }
+]

@@ -17,7 +17,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
-from . import config, tools, evidence, scoring, textmetrics
+from . import config, tools, evidence, models, scoring, textmetrics, dashboard
 
 _DECISIONS = ("approved_for_manual_use", "rejected", "needs_changes")
 
@@ -27,6 +27,7 @@ class AskIn(BaseModel):
     query: str = Field(max_length=2000)
     case_id: str | None = None
     today: str | None = None
+    model_id: str | None = None   # which model profile answers (see /api/models)
     eval_id: str | None = None   # demo: score this answer against the eval set's reference answer
 
 
@@ -52,18 +53,45 @@ def _cases() -> list[dict]:
 def create_app(copilot=None) -> FastAPI:
     """`copilot` can be injected (tests, notebooks). Otherwise it is built lazily from the environment."""
     app = FastAPI(title="RTO SmartTransfer Copilot", version="3.0.0", docs_url=None, redoc_url=None)
-    state = {"copilot": copilot, "error": None}
+    state = {"injected": copilot, "built": {}, "errors": {}, "search": None}
     config.load_dotenv()
 
-    def get_copilot():
-        if state["copilot"] is None and state["error"] is None:
-            config.load_dotenv()
-            try:
-                from .serving import Copilot
-                state["copilot"] = Copilot.from_env()
-            except Exception as exc:  # missing env vars or unreachable setup
-                state["error"] = str(exc)
-        return state["copilot"]
+    def profiles() -> dict:
+        return {p.id: p for p in models.load_profiles()}
+
+    def pick(model_id: str | None):
+        """Return (profile, error). Default is the first ready model in the list."""
+        ps = profiles()
+        if model_id:
+            if model_id not in ps:
+                return None, f"Unknown model '{model_id}'."
+            ok, why = ps[model_id].ready()
+            return (ps[model_id], None) if ok else (None, f"{ps[model_id].label} is not ready: {why}")
+        for p in ps.values():
+            if p.ready()[0]:
+                return p, None
+        return None, "no model is configured"
+
+    def get_copilot(model_id: str | None = None):
+        """(copilot, profile, error). Built lazily, one per model, sharing one retriever."""
+        if state["injected"] is not None:
+            return state["injected"], None, None
+        prof, err = pick(model_id)
+        if prof is None:
+            return None, None, err
+        if prof.id in state["built"]:
+            return state["built"][prof.id], prof, None
+        if prof.id in state["errors"]:
+            return None, prof, state["errors"][prof.id]
+        try:
+            from .serving import Copilot
+            if state["search"] is None:
+                state["search"] = tools.CorpusSearch()
+            state["built"][prof.id] = Copilot.for_profile(prof, state["search"])
+        except Exception as exc:  # retriever or client could not start
+            state["errors"][prof.id] = str(exc)
+            return None, prof, str(exc)
+        return state["built"][prof.id], prof, None
 
     @app.get("/")
     def index():
@@ -71,11 +99,34 @@ def create_app(copilot=None) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        c = get_copilot()
         cert = os.environ.get("LLM_CA_CERT", "")
-        return {"ok": True, "llm_ready": c is not None, "llm_error": state["error"], "cases": len(_cases()),
-                "eval_set": config.EVAL_VERSION, "missing_env": config.missing_llm_env(),
-                "ca_cert": cert or None, "ca_cert_found": bool(cert) and Path(cert).exists()}
+        ready = [m for m in _model_list() if m["ready"]]
+        return {"ok": True, "llm_ready": bool(ready), "llm_error": None if ready else "no model is ready",
+                "models_ready": [m["id"] for m in ready], "cases": len(_cases()), "eval_set": config.EVAL_VERSION,
+                "missing_env": config.missing_llm_env(), "ca_cert": cert or None,
+                "ca_cert_found": bool(cert) and Path(cert).exists()}
+
+    def _model_list() -> list[dict]:
+        if state["injected"] is not None:
+            m = getattr(state["injected"].agent.client, "model", "model")
+            return [{"id": "default", "label": m, "model": m, "kind": "remote", "ready": True, "reason": ""}]
+        return [p.public() for p in profiles().values()]
+
+    @app.get("/dashboard")
+    def trace_dashboard():
+        from fastapi.responses import HTMLResponse
+        runs = [dashboard.load_run(p) for p in dashboard.default_runs()]
+        return HTMLResponse(dashboard.build_html(runs, live=True))
+
+    @app.get("/api/traces/live")
+    def traces_live(limit: int = 60):
+        return dashboard.live_run(max(1, min(limit, 300)))
+
+    @app.get("/api/models")
+    def model_list():
+        items = _model_list()
+        default = next((m["id"] for m in items if m["ready"]), None)
+        return {"default": default, "models": items}
 
     @app.get("/api/cases")
     def cases():
@@ -101,16 +152,18 @@ def create_app(copilot=None) -> FastAPI:
 
     @app.post("/api/ask")
     def ask(body: AskIn):
-        c = get_copilot()
+        c, prof, err = get_copilot(body.model_id)
         if c is None:
             return JSONResponse(status_code=503, content={
                 "error": "The language model is not configured, so the copilot cannot answer questions yet. "
-                         "Case lookup still works.", "detail": state["error"]})
+                         "Case lookup still works.", "detail": err})
         query = body.query.strip()
         if body.case_id and body.case_id.lower() not in query.lower():
             query = f"Case {body.case_id}: {query}"
         row = _eval_rows().get(body.eval_id) if body.eval_id else None
         res = c.ask(body.session_id, query, body.today)
+        res["model"] = ({"id": prof.id, "label": prof.label, "model": prof.model} if prof else
+                        {"id": "default", "label": c.agent.client.model, "model": c.agent.client.model})
         final = res.get("final") or {}
         try:
             res["evidence"] = evidence.resolve(final, query, getattr(c.agent, "search", None))
@@ -130,7 +183,7 @@ def create_app(copilot=None) -> FastAPI:
 
     @app.post("/api/review")
     def review(body: ReviewIn):
-        c = get_copilot()
+        c = state["injected"] or next(iter(state["built"].values()), None) or get_copilot()[0]
         if c is None:
             raise HTTPException(503, "Copilot not configured")
         if body.decision not in _DECISIONS:

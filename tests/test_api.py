@@ -171,3 +171,94 @@ class TextMetrics(unittest.TestCase):
         self.assertEqual(T.rouge_l("x y z", "a b c"), 0.0)
         self.assertAlmostEqual(T.rouge_n("the cat sat", "the cat ran", 1), 2 / 3, places=4)
         self.assertAlmostEqual(T.rouge_l("the cat sat on mat", "the cat on mat"), 2 * 1 * 0.8 / 1.8, places=4)
+
+
+class Models(unittest.TestCase):
+    def setUp(self):
+        import os
+        self.keep = dict(os.environ)
+        for k in ("LLM_BASE_URL", "LLM_API_KEY", "LLM_MODEL", "LLM_CA_CERT", "HF_TOKEN", "MODELS_FILE"):
+            os.environ.pop(k, None)
+        self.addCleanup(lambda: (os.environ.clear(), os.environ.update(self.keep)))
+
+    def test_readiness_reasons(self):
+        import os
+        from rto_copilot import models
+        ps = {p.id: p for p in models.load_profiles()}
+        self.assertEqual(set(ps), {"qwen3-8b", "llama31-8b-local", "hf-router"})
+        self.assertIn("LLM_API_KEY", ps["qwen3-8b"].ready()[1])
+        self.assertIn("HF_TOKEN", ps["hf-router"].ready()[1])
+        os.environ.update(LLM_BASE_URL="https://x/v1", LLM_API_KEY="k", LLM_MODEL="Qwen/Qwen3-8B", HF_TOKEN="hf_x")
+        ps = {p.id: p for p in models.load_profiles()}
+        self.assertTrue(ps["qwen3-8b"].ready()[0])
+        self.assertTrue(ps["hf-router"].ready()[0])
+        os.environ["LLM_CA_CERT"] = "certs/does-not-exist.crt"
+        self.assertIn("certificate", {p.id: p for p in models.load_profiles()}["qwen3-8b"].ready()[1])
+
+    def test_models_json_adds_a_profile_and_qwen_kwargs_only_for_course(self):
+        import os
+        from rto_copilot import models
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "m.json"
+            f.write_text(json.dumps([{"id": "x1", "label": "X", "base_url": "http://localhost:9/v1", "model": "m"}]))
+            os.environ["MODELS_FILE"] = str(f)
+            self.assertIn("x1", [p.id for p in models.load_profiles()])
+        os.environ.update(LLM_BASE_URL="https://x/v1", LLM_API_KEY="k", LLM_MODEL="Qwen/Qwen3-8B")
+        ps = {p.id: p for p in models.load_profiles()}
+        self.assertTrue(ps["qwen3-8b"].client().template_kwargs)
+        self.assertFalse(ps["hf-router"].client().template_kwargs)
+
+    def test_api_models_and_unknown_model(self):
+        c = TestClient(create_app())
+        r = c.get("/api/models").json()
+        self.assertIsNone(r["default"])
+        self.assertEqual(len(r["models"]), 3)
+        bad = c.post("/api/ask", json={"session_id": "s", "query": "hi", "model_id": "nope"})
+        self.assertEqual(bad.status_code, 503)
+        self.assertIn("Unknown model", bad.json()["detail"])
+
+    def test_injected_copilot_reports_its_model(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        agent = make(ScriptedClient([plan()], [answer()]))
+        cp = serving.Copilot(agent, serving.Settings(rate_per_min=60, rate_burst=10), Path(tmp.name))
+        c = TestClient(create_app(cp))
+        self.assertEqual(c.get("/api/models").json()["default"], "default")
+        r = c.post("/api/ask", json={"session_id": "m1", "query": "hello"}).json()
+        self.assertEqual(r["model"]["id"], "default")
+
+
+class Dashboard(unittest.TestCase):
+    def test_saved_runs_are_structured_and_html_is_self_contained(self):
+        from rto_copilot import dashboard
+        runs = [dashboard.load_run(p) for p in dashboard.default_runs()]
+        self.assertGreaterEqual(len(runs), 4)
+        dev = next(r for r in runs if r["id"] == "w3_dev_final")
+        self.assertEqual(len(dev["traces"]), 57)
+        t = dev["traces"][0]
+        self.assertTrue(t["spans"][0]["n"] == "agent.turn" or any(s["n"] == "agent.turn" for s in t["spans"]))
+        self.assertIn(t["passed"], (True, False))
+        html = dashboard.build_html(runs)
+        self.assertNotIn("__DATA__", html)
+        self.assertNotIn("</script><script", html.replace("</script>\n</body>", ""))
+
+    def test_live_endpoint_reads_the_trace_file(self):
+        import os
+        from rto_copilot import config, dashboard, tracing
+        with tempfile.TemporaryDirectory() as d:
+            keep = config.STATE
+            config.STATE = Path(d)
+            try:
+                tracing.setup(Path(d) / "traces.jsonl")
+                with tracing.span("agent.turn", session="s", query_id=None, query="What is Form 29?", behavior="ANSWER",
+                                  llm_calls=1, tool_calls=0, tokens=10, stop_reason="done", completed=True, repaired="[]"):
+                    with tracing.span("planner"):
+                        pass
+                c = TestClient(create_app())
+                r = c.get("/api/traces/live").json()
+                self.assertEqual(r["id"], "live")
+                self.assertEqual(r["traces"][0]["query"], "What is Form 29?")
+                self.assertEqual(c.get("/dashboard").status_code, 200)
+            finally:
+                config.STATE = keep
+                tracing.setup(None)

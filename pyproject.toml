@@ -36,6 +36,7 @@ rto-diagnose = "rto_copilot.diagnose:main"
 rto-trace-report = "rto_copilot.trace_report:main"
 rto-serve = "rto_copilot.api:main"
 rto-check = "rto_copilot.check:main"
+rto-dashboard = "rto_copilot.dashboard:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -47,6 +48,3 @@ rto_copilot = ["web/*"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
-
-[tool.vercel]
-entrypoint = "src.rto_copilot.api:app"

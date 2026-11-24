@@ -24,6 +24,9 @@ In the UI every answer lists its sources (title, locator, link and the cited pas
 the "Test question from the eval set" picker scores the live answer with BLEU, ROUGE and the six checks.
 The first question downloads the retrieval models (about 1.3 GB, once), so it is slow the first time.
 
+Second model: pick it in the Model dropdown on the page. Setup (local open model from Hugging Face via Ollama, or the
+Hugging Face router) is in `docs/MODELS.md`.
+
 Keep `.env` and `certs/` inside the team. The team key allows one active request at a time, so do not run the UI and an
 evaluation together.
 
@@ -69,3 +72,15 @@ cp .env.example .env && docker compose up --build      # http://localhost:8000
 
 Offline pieces are tested: scorer, tools, agent control flow (scripted model), serving layer, API, eval-set validator,
 notebooks. Live model runs on v2 are still to do; see the last section of `docs/REVIEW_FINDINGS.md`.
+
+## Capstone deliverables (added)
+
+| Deliverable | Where |
+|---|---|
+| Git repository with the agent stack | this repo |
+| Trace dashboard on real executions | `dashboard/trace_dashboard.html` (offline) and `/dashboard` (live, served by the app). Rebuild with `rto-dashboard` |
+| Failure taxonomy | `report/Failure_Taxonomy_Synapse6.pdf` (rebuild: `scripts/analyse_failures.py`, `scripts/build_report_figures.py`, `scripts/build_taxonomy_pdf.py`) |
+| Technical report (15 pages) | `report/RTO_SmartTransfer_Technical_Report_Synapse6.docx` and `.pdf` |
+| 10-minute demo | `docs/DEMO_SCRIPT.md` |
+
+Fill in before submitting: the Llama 3.1 8B comparison table (report section 13.2) and one live UI screenshot (section 8).

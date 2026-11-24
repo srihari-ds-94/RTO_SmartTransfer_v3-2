@@ -354,6 +354,33 @@ if RUN_LIVE:
 else:
     print("Skipped (RUN_LIVE is False). Case checks above ran without a model.")
 '''),
+        md("""
+## 9. Compare models
+
+Every run records which model produced it. This table groups all runs by model and split, with Wilson 95% intervals.
+Run a second model with (needs `bash setup_ollama.sh` once; use v1 so the numbers match the saved Qwen3 runs):
+
+    RTO_EVAL_SET=v1 rto-agent-eval --split dev  --model-id llama31-8b-local --fresh-cache
+    RTO_EVAL_SET=v1 rto-agent-eval --split test --model-id llama31-8b-local --fresh-cache
+
+Compare models only on the **same rows**. With about 34 test rows the margin is about 17 points, so a gap smaller
+than that is not evidence that one model is better.
+"""),
+        code('''
+rows = []
+for d in sorted((config.RESULTS / "agent").iterdir()):
+    if not (d / "answers.jsonl").exists() or not (d / "config.json").exists() or "faults" in d.name or "llm_critic" in d.name:
+        continue
+    cfg = json.loads((d / "config.json").read_text())
+    r = nbkit.agent_run(d.name)
+    cr = component_report(r)
+    rows.append({"run": d.name, "model": cfg.get("model"), "split": cfg.get("split"), "eval_set": cfg.get("eval_set", "v1"),
+                 "n": cr["n"], "end_to_end": cr["end_to_end"], "ci95": cr["ci95"], **cr["components"]})
+cmp_df = pd.DataFrame(rows)
+print(cmp_df.to_string(index=False) if len(cmp_df) else "No runs found.")
+if cmp_df.model.nunique() < 2:
+    print("\\nOnly one model so far. Run the commands above for a second model, then re-run this cell.")
+'''),
     ])
 
 

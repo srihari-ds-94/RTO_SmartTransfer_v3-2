@@ -1,0 +1,1 @@
+{"text": "{\"behavior\": \"ANSWER\", \"reason\": \"In-scope normal sale without a loan.\", \"role\": \"unknown\", \"case_id\": null, \"transfer_date\": null, \"steps\": [{\"tool\": \"search_corpus\", \"args\": {\"query\": \"forms and documents for transfer of ownership on sale of a vehicle without loan\"}}]}", "latency_s": 2.13, "prompt_tokens": 2330, "completion_tokens": 72}
